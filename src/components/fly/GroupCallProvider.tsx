@@ -939,7 +939,7 @@ export function GroupCallProvider({ children }: { children: ReactNode }) {
           </div>
           )}
 
-          <div className="px-6 pb-8 pt-4 flex items-center justify-center gap-4 border-t border-white/10">
+          <div className="mx-auto mb-6 mt-2 px-4 py-3 flex items-center justify-center gap-4 rounded-full bg-white/10 backdrop-blur-md shadow-lg">
             {isVideo && (
               <button
                 onClick={() => void switchCamera()}
