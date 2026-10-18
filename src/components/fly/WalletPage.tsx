@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { RewardedAdCard } from "./ads";
-import { ArrowLeft, Loader2, Star, Wallet, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, Star, Wallet, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import {
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
@@ -208,7 +209,21 @@ export function WalletPage({ onBack }: { onBack: () => void }) {
                     <p className="font-medium text-gray-900">{formatTaka(w.amount)} · {w.method}</p>
                     <p className="text-xs text-gray-400">{w.number} · {new Date(w.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <StatusBadge status={w.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={w.status} />
+                    {user && w.uid === user.uid && (
+                      <button
+                        aria-label="ইতিহাস মুছুন"
+                        onClick={() => {
+                          if (!window.confirm("এই ইতিহাসটি মুছে ফেলবেন?")) return;
+                          deleteDoc(doc(db, "withdrawals", w.id)).catch(() => setMsg("মুছে ফেলা যায়নি, আবার চেষ্টা করুন।"));
+                        }}
+                        className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active:scale-90"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

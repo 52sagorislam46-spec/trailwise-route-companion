@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { Check, Copy, Loader2, PlusCircle } from "lucide-react";
+import { collection, deleteDoc, doc, onSnapshot, query, where } from "firebase/firestore";
+import { Check, Copy, Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { db } from "../../lib/firebase";
 import { useAuth } from "./AuthContext";
 import { submitRecharge, TAKA_PER_BOUGHT_STAR, usePaymentSettings, type RechargeRequest } from "./monetization";
@@ -85,8 +85,22 @@ export function AddMoneyCard() {
           {mine.map((r) => (
             <li key={r.id} className="py-2 flex justify-between">
               <span>৳{r.amount} · {r.kind === "stars" ? "স্টার" : "ওয়ালেট"} · <span className="font-mono text-xs">{r.trxId}</span></span>
-              <span className={`text-xs font-semibold ${r.status === "approved" ? "text-emerald-600" : r.status === "rejected" ? "text-red-500" : "text-amber-600"}`}>
-                {r.status === "approved" ? "Approved" : r.status === "rejected" ? "Rejected" : "Pending"}
+              <span className="flex items-center gap-2">
+                <span className={`text-xs font-semibold ${r.status === "approved" ? "text-emerald-600" : r.status === "rejected" ? "text-red-500" : "text-amber-600"}`}>
+                  {r.status === "approved" ? "Approved" : r.status === "rejected" ? "Rejected" : "Pending"}
+                </span>
+                {user && r.uid === user.uid && (
+                  <button
+                    aria-label="ইতিহাস মুছুন"
+                    onClick={() => {
+                      if (!window.confirm("এই ইতিহাসটি মুছে ফেলবেন?")) return;
+                      deleteDoc(doc(db, "rechargeRequests", r.id)).catch(() => setMsg("মুছে ফেলা যায়নি, আবার চেষ্টা করুন।"));
+                    }}
+                    className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active:scale-90"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </span>
             </li>
           ))}
