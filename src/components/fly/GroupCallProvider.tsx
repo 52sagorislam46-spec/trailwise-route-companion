@@ -37,6 +37,7 @@ import {
   cleanupGroupCall,
   createGroupCallDoc,
   groupCallRef,
+  gridRows,
   isOfferer,
   pairId,
   peerCandidatesRef,
@@ -777,24 +778,9 @@ export function GroupCallProvider({ children }: { children: ReactNode }) {
   ).padStart(2, "0")}`;
   const isHost = !!call && call.hostId === user?.uid;
   const isVideo = call?.type === "video";
-  // Unlimited members: the tile grid gets denser as more people join.
-  const tileCount = joinedList.length + 1;
-  const gridCols =
-    tileCount <= 1
-      ? "grid-cols-1"
-      : tileCount <= 4
-        ? "grid-cols-2"
-        : tileCount <= 9
-          ? "grid-cols-3"
-          : "grid-cols-4";
-  const tileMin =
-    tileCount <= 2
-      ? "min-h-[34vh]"
-      : tileCount <= 4
-        ? "min-h-[26vh]"
-        : tileCount <= 9
-          ? "min-h-[18vh]"
-          : "min-h-[13vh]";
+  // Unlimited members: rows split the screen equally; very big calls scroll.
+  const tileCount = remotes.length + 1;
+  const scrollGrid = gridRows(tileCount).length > 4;
 
   return (
     <GroupCallContext.Provider value={value}>
@@ -869,72 +855,87 @@ export function GroupCallProvider({ children }: { children: ReactNode }) {
               </p>
             </div>
           ) : (
-          <div className={`flex-1 overflow-y-auto p-3 grid ${gridCols} gap-3 auto-rows-fr`}>
-            {/* Me */}
-            <div className={`relative rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center ${tileMin}`}>
-              {isVideo && !camOff ? (
-                <video
-                  ref={(el) => {
-                    localVideoRef.current = el;
-                    const stream = localStreamRef.current;
-                    if (el && stream && el.srcObject !== stream) {
-                      el.srcObject = stream;
-                      el.muted = true;
-                      void el.play().catch(() => {});
-                    }
-                  }}
-                  autoPlay
-                  muted
-                  playsInline
-                  className={`w-full h-full object-cover ${
-                    facing === "user" ? "scale-x-[-1]" : ""
-                  }`}
-                />
-              ) : (
-                <Avatar
-                  src={profile?.photoURL ?? DEFAULT_AVATAR}
-                  alt="You"
-                  size={64}
-                />
-              )}
-              <span className="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-0.5 rounded-full">
-                You {muted && "· muted"}
-              </span>
-            </div>
-
-            {/* Everyone else who answered */}
-            {remotes.map((entry) => (
-              <div
-                key={entry.uid}
-                className={`relative rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center ${tileMin}`}
-              >
-                <video
-                  ref={(el) => {
-                    if (el && el.srcObject !== entry.stream) {
-                      el.srcObject = entry.stream;
-                      void el.play().catch(() => {});
-                    }
-                  }}
-                  autoPlay
-                  playsInline
-                  className={
-                    isVideo
-                      ? "w-full h-full object-cover"
-                      : "w-0 h-0 opacity-0 absolute"
-                  }
-                />
-                {!isVideo && (
-                  <Avatar
-                    src={memberOf(entry.uid)?.photoURL ?? DEFAULT_AVATAR}
-                    alt={memberOf(entry.uid)?.displayName ?? "Member"}
-                    size={64}
-                  />
-                )}
-                <span className="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-0.5 rounded-full">
-                  {memberOf(entry.uid)?.displayName ?? "Member"}
-                </span>
-              </div>
-            ))}
+          <div className={`flex-1 min-h-0 p-2 flex flex-col gap-2 ${scrollGrid ? "overflow-y-auto" : ""}`}>
+            {(() => {
+              const tiles: ReactNode[] = [
+                <div
+                  key="me"
+                  className="relative w-full h-full rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center"
+                >
+                  {isVideo && !camOff ? (
+                    <video
+                      ref={(el) => {
+                        localVideoRef.current = el;
+                        const stream = localStreamRef.current;
+                        if (el && stream && el.srcObject !== stream) {
+                          el.srcObject = stream;
+                          el.muted = true;
+                          void el.play().catch(() => {});
+                        }
+                      }}
+                      autoPlay
+                      muted
+                      playsInline
+                      className={`w-full h-full object-cover ${
+                        facing === "user" ? "scale-x-[-1]" : ""
+                      }`}
+                    />
+                  ) : (
+                    <Avatar src={profile?.photoURL ?? DEFAULT_AVATAR} alt="You" size={64} />
+                  )}
+                  <span className="absolute bottom-2 left-2 flex items-center gap-1 text-xs bg-black/50 px-2 py-0.5 rounded-full">
+                    {muted && <MicOff size={12} />} You
+                  </span>
+                </div>,
+                ...remotes.map((entry) => (
+                  <div
+                    key={entry.uid}
+                    className="relative w-full h-full rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center"
+                  >
+                    <video
+                      ref={(el) => {
+                        if (el && el.srcObject !== entry.stream) {
+                          el.srcObject = entry.stream;
+                          void el.play().catch(() => {});
+                        }
+                      }}
+                      autoPlay
+                      playsInline
+                      className={
+                        isVideo ? "w-full h-full object-cover" : "w-0 h-0 opacity-0 absolute"
+                      }
+                    />
+                    {!isVideo && (
+                      <Avatar
+                        src={memberOf(entry.uid)?.photoURL ?? DEFAULT_AVATAR}
+                        alt={memberOf(entry.uid)?.displayName ?? "Member"}
+                        size={64}
+                      />
+                    )}
+                    <span className="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-0.5 rounded-full max-w-[85%] truncate">
+                      {memberOf(entry.uid)?.displayName ?? "Member"}
+                    </span>
+                  </div>
+                )),
+              ];
+              let cursor = 0;
+              return gridRows(tiles.length).map((size, rowIdx) => {
+                const row = tiles.slice(cursor, cursor + size);
+                cursor += size;
+                return (
+                  <div
+                    key={rowIdx}
+                    className={`flex gap-2 ${scrollGrid ? "h-[22vh] shrink-0" : "flex-1 min-h-0"}`}
+                  >
+                    {row.map((tile, i) => (
+                      <div key={i} className="flex-1 min-w-0 h-full">
+                        {tile}
+                      </div>
+                    ))}
+                  </div>
+                );
+              });
+            })()}
           </div>
           )}
 
