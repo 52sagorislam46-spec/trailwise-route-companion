@@ -221,3 +221,19 @@ export async function cleanupGroupCall(callId: string) {
     /* best effort */
   }
 }
+
+/**
+ * Messenger/WhatsApp-style tile rows for a group call grid.
+ * 1 → [1], 2 → [1,1] (top/bottom), 3 → [1,2] (one on top, two below),
+ * 4 → [2,2], 5 → [2,3], 6 → [3,3] … The shorter row always sits on top so
+ * every tile keeps an equal, never tall-and-thin, frame.
+ */
+export function gridRows(count: number): number[] {
+  if (count <= 0) return [];
+  if (count === 1) return [1];
+  if (count === 2) return [1, 1];
+  const cols = count <= 4 ? 2 : count <= 9 ? 3 : 4;
+  const rows = Math.ceil(count / cols);
+  const first = count - cols * (rows - 1);
+  return [first, ...Array(rows - 1).fill(cols)];
+}
