@@ -1,0 +1,3 @@
+- [x] Remove automatic starter/demo star defaults without changing other features.
+- [ ] Reset existing account balances once, as explicitly approved by the user, and verify readback.
+- [ ] Verify balance tests and preview.

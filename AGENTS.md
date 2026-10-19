@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep missing-account star defaults in `balance-defaults.ts` and reuse them in displays and transactions so starter credit cannot differ by feature.
