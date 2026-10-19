@@ -4,9 +4,9 @@ import { doc, onSnapshot, runTransaction, addDoc, collection, serverTimestamp } 
 import { db } from "../../lib/firebase";
 import { useAuth } from "./AuthContext";
 import { pushToUsers } from "../../lib/push";
+import { STARTER_STARS } from "./balance-defaults";
 
-/** Starting balance for accounts that have never had a star balance. */
-export const STARTER_STARS = 100;
+export { STARTER_STARS } from "./balance-defaults";
 const AMOUNTS = [5, 10, 50, 100];
 
 export function useStarBalance(uid?: string) {

@@ -4,6 +4,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { Avatar } from "./Avatar";
 import { WithdrawalRequestsPage } from "./WithdrawalRequestsPage";
+import { STARTER_STARS } from "./balance-defaults";
 import {
   grantFree,
   reviewRecharge,
@@ -158,7 +159,7 @@ function UserRow({ u, open, onToggle }: { u: U; open: boolean; onToggle: () => v
         <Avatar src={u.photoURL ?? ""} alt={u.displayName ?? ""} size={40} />
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-semibold text-gray-900 truncate">{u.displayName || "Unknown"}</span>
-          <span className="block text-xs text-gray-400 truncate">@{u.username} · ⭐ {u.stars ?? 100} · ৳{(u.walletBalance ?? 0).toFixed(0)}</span>
+          <span className="block text-xs text-gray-400 truncate">@{u.username} · ⭐ {u.stars ?? STARTER_STARS} · ৳{(u.walletBalance ?? 0).toFixed(0)}</span>
         </span>
         {mon === "pending" && <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pending</span>}
         {mon === "approved" && <BadgeDollarSign size={16} className="text-emerald-500" />}

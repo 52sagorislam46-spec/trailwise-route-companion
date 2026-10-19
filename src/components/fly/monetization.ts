@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { notifyAdminNotice } from "../../lib/appNotifications";
+import { STARTER_STARS } from "./balance-defaults";
 
 /** Taka needed to buy one star via Add Money. */
 export const TAKA_PER_BOUGHT_STAR = 1;
@@ -80,12 +81,12 @@ export async function reviewRecharge(r: RechargeRequest, approve: boolean) {
   }).catch(() => {});
 }
 
-/** Admin gift: free stars and/or wallet taka. Stars start at 100 for new accounts. */
+/** Admin gift: free stars and/or wallet taka, without automatic starter credit. */
 export async function grantFree(uid: string, stars: number, taka: number) {
   await runTransaction(db, async (tx) => {
     const ref = doc(db, "users", uid);
     const d = ((await tx.get(ref)).data() ?? {}) as { stars?: number; walletBalance?: number };
-    const curStars = typeof d.stars === "number" ? d.stars : 100;
+    const curStars = typeof d.stars === "number" ? d.stars : STARTER_STARS;
     tx.set(ref, { stars: curStars + stars, walletBalance: (d.walletBalance ?? 0) + taka }, { merge: true });
   });
   const parts = [stars ? `${stars} স্টার` : "", taka ? `৳${taka}` : ""].filter(Boolean).join(" ও ");
