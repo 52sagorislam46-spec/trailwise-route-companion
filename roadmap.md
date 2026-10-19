@@ -1,3 +1,3 @@
 - [x] Remove automatic starter/demo star defaults without changing other features.
-- [ ] Reset existing account balances once, as explicitly approved by the user, and verify readback.
-- [ ] Verify balance tests and preview.
+- [x] Reset all 7 existing accounts' star, received/withdrawn star, and wallet balances once; verify zero values and preserve other fields.
+- [x] Verify zero-starter test, successful build, and error-free sign-in preview; wallet UI requires the user's Firebase session.
