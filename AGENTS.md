@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep missing-account star defaults in `balance-defaults.ts` and reuse them in displays and transactions so starter credit cannot differ by feature.
+- Admin withdrawal-history removal uses a per-viewer `hiddenFrom` list, not document deletion, to preserve payment records, pending totals, and the account owner's history.

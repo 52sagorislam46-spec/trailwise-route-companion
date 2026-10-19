@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { notifyAdminNotice } from "../../lib/appNotifications";
 import { StatusBadge, formatTaka, type Withdrawal } from "./WalletPage";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "./AuthContext";
+import { isWithdrawalHistoryVisible, removeWithdrawalHistory } from "./withdrawal-history";
+
+type HistoryWithdrawal = Withdrawal & { hiddenFrom?: string[] };
 
 export function WithdrawalRequestsPage({ onBack }: { onBack: () => void }) {
-  const [items, setItems] = useState<Withdrawal[] | null>(null);
+  const { user } = useAuth();
+  const [items, setItems] = useState<HistoryWithdrawal[] | null>(null);
   const [filter, setFilter] = useState<"pending" | "paid">("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(
     () =>
@@ -17,7 +24,7 @@ export function WithdrawalRequestsPage({ onBack }: { onBack: () => void }) {
         (s) =>
           setItems(
             s.docs
-              .map((d) => ({ id: d.id, ...(d.data() as Omit<Withdrawal, "id">) }))
+              .map((d) => ({ id: d.id, ...(d.data() as Omit<HistoryWithdrawal, "id">) }))
               .sort((a, b) => b.createdAt - a.createdAt),
           ),
         () => setItems([]),
@@ -39,7 +46,22 @@ export function WithdrawalRequestsPage({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const list = (items ?? []).filter((w) => w.status === filter);
+  const removeHistory = async (w: Withdrawal) => {
+    if (!user || busyId) return;
+    if (!window.confirm("আপনার তালিকা থেকে এই ইতিহাসটি সরাবেন? ব্যালেন্স ও মূল পেমেন্টের তথ্য অপরিবর্তিত থাকবে।")) return;
+    setBusyId(w.id);
+    setMessage("");
+    try {
+      await removeWithdrawalHistory(w.id, user.uid);
+      setMessage("আপনার তালিকা থেকে ইতিহাস সরানো হয়েছে।");
+    } catch {
+      setMessage("ইতিহাস সরানো যায়নি, আবার চেষ্টা করুন।");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const list = (items ?? []).filter((w) => w.status === filter && !!user && isWithdrawalHistoryVisible(w, user.uid));
   const pendingTotal = (items ?? []).filter((w) => w.status === "pending").reduce((s, w) => s + w.amount, 0);
 
   return (
@@ -63,6 +85,7 @@ export function WithdrawalRequestsPage({ onBack }: { onBack: () => void }) {
             </button>
           ))}
         </div>
+        {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
         {items === null ? (
           <div className="flex justify-center py-10"><Loader2 className="animate-spin text-sky-500" /></div>
         ) : list.length === 0 ? (
@@ -75,7 +98,15 @@ export function WithdrawalRequestsPage({ onBack }: { onBack: () => void }) {
                   <p className="font-semibold text-gray-900">{w.displayName || "Unknown"}</p>
                   <p className="text-xs text-gray-400">@{w.username}</p>
                 </div>
-                <StatusBadge status={w.status} />
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={w.status} />
+                  {user && (
+                    <Button variant="ghost" size="icon" aria-label="ইতিহাস মুছুন" title="ইতিহাস মুছুন"
+                      disabled={busyId !== null} onClick={() => void removeHistory(w)} className="text-destructive">
+                      {busyId === w.id ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="text-sm text-gray-700">
                 <p><b>{formatTaka(w.amount)}</b> ({w.stars.toLocaleString()} স্টার)</p>
